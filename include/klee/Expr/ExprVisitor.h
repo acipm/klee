@@ -90,7 +90,7 @@ namespace klee {
   public:
     // apply the visitor to the expression and return a possibly
     // modified new expression.
-    ref<Expr> visit(const ref<Expr> &e);
+    virtual ref<Expr> visit(const ref<Expr> &e);
   };
 
 }
