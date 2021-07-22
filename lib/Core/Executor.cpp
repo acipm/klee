@@ -2363,17 +2363,44 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
       arguments.push_back(eval(ki, j+1, state).value);
 
     if (f->getGlobalIdentifier() == "fopen") {
-      std::string TmpStr;
-      llvm::raw_string_ostream os(TmpStr);
-      os << "fopen called with parameters:\n";
-      state.addressSpace.copyOutConcretes();
-      for (unsigned j=0; j<numArgs; ++j) {
-          if (ConstantExpr *ce = dyn_cast<ConstantExpr>(arguments[j])) {
-            os << "fopen argument " << j << ": " << reinterpret_cast <char*>(ce->getZExtValue()) << "\n";
-          } else {
-            os << "symbolic?\n";
+      std::string tmpStr;
+      llvm::raw_string_ostream os(tmpStr);
+
+      os << "\n";
+      os << "--> Constraints to reach fopen state:\n";
+      ExprPPrinter::printConstraints(os, state.constraints);
+
+      os << "\n";
+      os << "---> fopen parameters:\n";
+      for (unsigned k=0; k<numArgs; k++) {
+        ResolutionList rl;
+        state.addressSpace.resolve(state, solver, arguments[k], rl);
+        os << "parameter " << k << ":\n";
+
+        if (rl.size() != 1) {
+          os << "Error: Parameter of fopen points to more than one element!\n";
+        } else {
+          std::vector<ref<Expr>> firstArgBytes;
+          const ObjectState* objectState = rl[0].second;
+          for (unsigned j = 0; j < objectState->size; j++) {
+            ref<Expr> expr = objectState->read8(j);
+            if (expr->isZero()) {
+              break;
+            }
+            firstArgBytes.push_back(expr);
           }
+          for (unsigned i = 0; i < firstArgBytes.size(); i++) {
+            if (ConstantExpr *ce = dyn_cast<ConstantExpr>(firstArgBytes[i])) {
+              os << "[" << i << "]: " << static_cast<char>(ce->getZExtValue()) << "\n";
+            } else {
+              os << "[" << i << "]: ";
+              ExprPPrinter::printSingleExpr(os, firstArgBytes[i]);
+              os << "\n";
+            }
+          }
+        }
       }
+
       klee_message("%s", os.str().c_str());
     }
 
