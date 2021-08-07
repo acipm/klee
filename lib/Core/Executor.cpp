@@ -2378,7 +2378,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
         os << "parameter " << k << ":\n";
 
         if (rl.size() != 1) {
-          os << "Error: Parameter of fopen points to more than one element!\n";
+          os << "Error: Parameter of fopen points to " << rl.size() << " instead of one element!\n";
         } else {
           std::vector<ref<Expr>> firstArgBytes;
           const ObjectState* objectState = rl[0].second;
