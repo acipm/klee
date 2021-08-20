@@ -2363,45 +2363,33 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
       arguments.push_back(eval(ki, j+1, state).value);
 
     if (f->getGlobalIdentifier() == "fopen") {
-      std::string tmpStr;
-      llvm::raw_string_ostream os(tmpStr);
-
-      os << "\n";
-      os << "--> Constraints to reach fopen state:\n";
-      ExprPPrinter::printConstraints(os, state.constraints);
-
-      os << "\n";
-      os << "---> fopen parameters:\n";
+      GeneratorDataEntry entry;
+      entry.identifier = "fopen";
+      entry.constraints = state.constraints;
       for (unsigned k=0; k<numArgs; k++) {
         ResolutionList rl;
         state.addressSpace.resolve(state, solver, arguments[k], rl);
-        os << "parameter " << k << ":\n";
 
         if (rl.size() != 1) {
+          std::string tmpStr;
+          llvm::raw_string_ostream os(tmpStr);
+          os << "\n";
           os << "Error: Parameter of fopen points to " << rl.size() << " instead of one element!\n";
+          klee_message("%s", os.str().c_str());
         } else {
-          std::vector<ref<Expr>> firstArgBytes;
+          std::vector<ref<Expr>> argBytes;
           const ObjectState* objectState = rl[0].second;
           for (unsigned j = 0; j < objectState->size; j++) {
             ref<Expr> expr = objectState->read8(j);
             if (expr->isZero()) {
               break;
             }
-            firstArgBytes.push_back(expr);
+            argBytes.push_back(expr);
           }
-          for (unsigned i = 0; i < firstArgBytes.size(); i++) {
-            if (ConstantExpr *ce = dyn_cast<ConstantExpr>(firstArgBytes[i])) {
-              os << "[" << i << "]: " << static_cast<char>(ce->getZExtValue()) << "\n";
-            } else {
-              os << "[" << i << "]: ";
-              ExprPPrinter::printSingleExpr(os, firstArgBytes[i]);
-              os << "\n";
-            }
-          }
+          entry.parameters.push_back(argBytes);
         }
       }
-
-      klee_message("%s", os.str().c_str());
+      generatorData.push_back(entry);  
     }
 
     if (f) {
@@ -4404,6 +4392,7 @@ void Executor::runFunctionAsMain(Function *f,
 
   processTree = std::make_unique<PTree>(state);
   run(*state);
+  serializeGeneratorData();
   processTree = nullptr;
 
   // hack to clear memory objects
@@ -4709,6 +4698,12 @@ void Executor::dumpStates() {
   }
 
   ::dumpStates = 0;
+}
+
+void Executor::serializeGeneratorData() {
+  std::map<std::string, std::string> concreteValues = {{"arg00", "ab"}};
+  Generator g = Generator(generatorData, concreteValues);
+  g.generate();
 }
 
 ///

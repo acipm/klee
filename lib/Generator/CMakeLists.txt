@@ -6,10 +6,13 @@
 # License. See LICENSE.TXT for details.
 #
 #===------------------------------------------------------------------------===#
-add_subdirectory(Basic)
-add_subdirectory(Support)
-add_subdirectory(Expr)
-add_subdirectory(Solver)
-add_subdirectory(Module)
-add_subdirectory(Core)
-add_subdirectory(Generator)
+klee_add_component(generator
+  AppArmorFileRulesMapping.cpp
+  Generator.cpp
+)
+
+set(LLVM_COMPONENTS
+  support
+)
+klee_get_llvm_libs(LLVM_LIBS ${LLVM_COMPONENTS})
+target_link_libraries(generator PUBLIC ${LLVM_LIBS})

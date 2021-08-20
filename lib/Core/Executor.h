@@ -22,6 +22,7 @@
 #include "klee/Core/Interpreter.h"
 #include "klee/Expr/ArrayCache.h"
 #include "klee/Expr/ArrayExprOptimizer.h"
+#include "klee/Generator/Generator.h"
 #include "klee/Module/Cell.h"
 #include "klee/Module/KInstruction.h"
 #include "klee/Module/KModule.h"
@@ -119,6 +120,8 @@ public:
   RNG theRNG;
 
 private:
+  std::vector<GeneratorDataEntry> generatorData;
+
   static const char *TerminateReasonNames[];
 
   std::unique_ptr<KModule> kmodule;
@@ -479,6 +482,7 @@ private:
   void dumpStates();
   void dumpPTree();
 
+  void serializeGeneratorData();
 public:
   Executor(llvm::LLVMContext &ctx, const InterpreterOptions &opts,
       InterpreterHandler *ie);
