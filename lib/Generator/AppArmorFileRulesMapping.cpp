@@ -29,7 +29,6 @@ namespace klee {
 
           Assignment a(symbolicArrays, values);
           ref<Expr> result = a.evaluate(entry.parameters[i][j]);
-          ce = dyn_cast<ConstantExpr>(result);
           ConstantExpr *ce2 = dyn_cast<ConstantExpr>(result);
           parameters[i] += static_cast<char>(ce2->getZExtValue());
         }
@@ -41,8 +40,9 @@ namespace klee {
   AppArmorFileRule FopenMapping::mapToFileRule(GeneratorDataEntry entry, std::map<std::string, std::string> concreteValues) {
     std::vector<std::string> parameters = calculateConcreteParameters(entry, concreteValues);
 
-    // TODO first parameter: filepath instead of string
-    // TODO first parameter: extend to absolute path
+    if (parameters.size() != 2) {
+      // TODO error: invalid number of parameters
+    }
 
     // remove 'b' as it does nothing
     std::string apparmor_access;

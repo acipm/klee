@@ -13,6 +13,7 @@ namespace klee {
       return dt.print(os);
     }
     virtual std::ostream& print(std::ostream &os) const = 0;
+    virtual bool operator ==(const AppArmorCommaRule &b) const = 0;
   };
   
   class AppArmorFileRule : public AppArmorCommaRule {
@@ -30,6 +31,15 @@ namespace klee {
       }
       os << fileglob  << " " << access;
       return os;
+    }
+
+    bool operator ==(const AppArmorCommaRule &b) const {
+       if (const AppArmorFileRule *ce = dynamic_cast<const AppArmorFileRule*>(&b)) {
+         if (fileglob == ce->fileglob && access == ce->access && owner == ce->owner) {
+           return true;
+         }
+       }
+       return false;
     }
   };
 

@@ -12,9 +12,12 @@ namespace klee {
     std::vector<std::unique_ptr<AppArmorFileRulesMapping>> fileRuleMappings;
     std::vector<GeneratorDataEntry> data;
     std::map<std::string, std::string> concreteValues;
+    std::string fullPathToApp;
+    std::string apparmorConfigPath;
+    std::string apparmorPathToFilename(std::string path);
     
   public:
-    Generator(std::vector<GeneratorDataEntry> data, std::map<std::string, std::string> concreteValues);
+    Generator(std::vector<GeneratorDataEntry> data, std::map<std::string, std::string> concreteValues, std::string fullPathToApp, std::string apparmorConfigPath = "/etc/apparmor.d/");
     void generate();
   };
 }
