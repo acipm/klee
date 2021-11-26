@@ -12,7 +12,11 @@ namespace klee {
     for (unsigned i = 0; i < entry.parameters.size(); i++) {
       for (unsigned j = 0; j < entry.parameters[i].size(); j++) {
         if (ConstantExpr *ce = dyn_cast<ConstantExpr>(entry.parameters[i][j])) {
-          parameters[i] += static_cast<char>(ce->getZExtValue());
+          char letter = static_cast<char>(ce->getZExtValue());
+          if (!isprint(letter)) {
+            break;
+          }
+          parameters[i] += letter;
         } else {
           std::vector<const Array *> symbolicArrays;
           std::vector<std::vector<unsigned char>> values;
@@ -30,7 +34,11 @@ namespace klee {
           Assignment a(symbolicArrays, values);
           ref<Expr> result = a.evaluate(entry.parameters[i][j]);
           ConstantExpr *ce2 = dyn_cast<ConstantExpr>(result);
-          parameters[i] += static_cast<char>(ce2->getZExtValue());
+          char letter = static_cast<char>(ce2->getZExtValue());
+          if (!isprint(letter)) {
+            break;
+          }
+          parameters[i] += letter;
         }
       }
     }
