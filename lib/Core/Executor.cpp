@@ -4701,7 +4701,7 @@ void Executor::dumpStates() {
 }
 
 void Executor::serializeGeneratorData() {
-  std::map<std::string, std::string> concreteValues = {{"arg00", "ab"}};
+  std::map<std::string, std::string> concreteValues = {{"arg00", "ab"}, {"model_version", "\1"}};
   Generator g = Generator(generatorData, concreteValues, "/some/path/testprofil.txt", "./");
   g.generate();
 }

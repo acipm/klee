@@ -20,7 +20,7 @@ namespace klee {
 
   public:
     virtual std::string Id() = 0;
-    virtual AppArmorFileRule mapToFileRule(GeneratorDataEntry entry, std::map<std::string, std::string> concreteValues) = 0;
+    virtual AppArmorFileRule* mapToFileRule(GeneratorDataEntry entry, std::map<std::string, std::string> concreteValues) = 0;
   };
 
   class FopenMapping : public AppArmorFileRulesMapping {
@@ -34,7 +34,7 @@ namespace klee {
 
   public:
     std::string Id() override;
-    AppArmorFileRule mapToFileRule(GeneratorDataEntry entry, std::map<std::string, std::string> concreteValues) override;
+    AppArmorFileRule* mapToFileRule(GeneratorDataEntry entry, std::map<std::string, std::string> concreteValues) override;
   };
 }
 

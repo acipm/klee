@@ -21,7 +21,11 @@ namespace klee {
     for (unsigned i = 0; i < data.size(); i++) {
       for (unsigned j = 0; j < fileRuleMappings.size(); j++) {
         if (fileRuleMappings[j]->Id() == data[i].identifier) {
-          std::shared_ptr<AppArmorFileRule> rule = std::make_shared<AppArmorFileRule>(fileRuleMappings[j]->mapToFileRule(data[i], concreteValues));
+          auto mapResult = fileRuleMappings[j]->mapToFileRule(data[i], concreteValues);
+          if (mapResult == NULL) {
+            continue;
+          }
+          std::shared_ptr<AppArmorFileRule> rule = std::make_shared<AppArmorFileRule>(*mapResult);
           bool isDuplicate = false;
           for (const auto &commaRule : commaRules) {
             if (*commaRule == *rule) {
