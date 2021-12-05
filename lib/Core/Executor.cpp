@@ -7,6 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// REMOVE THIS
+#include "llvm/ADT/APInt.h"
+//END REMOVE THIS
+
+#include "klee/Serialization/llvm.h"
+#include "klee/Serialization/Expr.h"
+#include "klee/Serialization/Ref.h"
+#include "klee/Serialization/Utils.h"
+
 #include "Executor.h"
 
 #include "Context.h"
@@ -4701,8 +4710,12 @@ void Executor::dumpStates() {
 }
 
 void Executor::serializeGeneratorData() {
+  serialize(generatorData);
+  std::vector<GeneratorDataEntry> newGeneratorData;
+  deserialize(&newGeneratorData);
+
   std::map<std::string, std::string> concreteValues = {{"arg00", "ab"}, {"model_version", "\1"}};
-  Generator g = Generator(generatorData, concreteValues, "/some/path/testprofil.txt", "./");
+  Generator g = Generator(newGeneratorData, concreteValues, "/some/path/testprofil.txt", "./");
   g.generate();
 }
 

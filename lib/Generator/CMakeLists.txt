@@ -15,4 +15,4 @@ set(LLVM_COMPONENTS
   support
 )
 klee_get_llvm_libs(LLVM_LIBS ${LLVM_COMPONENTS})
-target_link_libraries(generator PUBLIC ${LLVM_LIBS})
+target_link_libraries(generator PUBLIC ${LLVM_LIBS} Boost::serialization)

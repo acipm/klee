@@ -10,6 +10,16 @@ namespace klee {
   typedef std::vector<ref<Expr>> ParameterExpressions;
 
   struct GeneratorDataEntry {
+    /*** serialization ***/
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+        ar & identifier;
+        ar & constraints;
+        ar & parameters;
+    }
+    /*** end serialization ***/
+
     std::string identifier;
     ConstraintSet constraints;
     std::vector<ParameterExpressions> parameters;

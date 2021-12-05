@@ -17,6 +17,16 @@ namespace klee {
 /// Resembles a set of constraints that can be passed around
 ///
 class ConstraintSet {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version)
+  {
+      ar & constraints;
+  }
+/*** end serialization ***/
+private:
   friend class ConstraintManager;
 
 public:

@@ -370,6 +370,9 @@ else()
     message( FATAL_ERROR "SQLite3 not found, please install" )
 endif()
 
+# Boost
+find_package(Boost COMPONENTS serialization)
+
 ################################################################################
 # Detect libcap
 ################################################################################

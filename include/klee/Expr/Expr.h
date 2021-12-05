@@ -19,6 +19,9 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/base_object.hpp>
+
 #include <sstream>
 #include <set>
 #include <vector>
@@ -89,6 +92,16 @@ Todo: Shouldn't bool \c Xor just be written as not equal?
 */
 
 class Expr {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version)
+  {
+      ar & hashValue;
+  }
+/*** end serialization ***/
+
 public:
   static unsigned count;
   static const unsigned MAGIC_HASH_CONSTANT = 39;
@@ -358,6 +371,18 @@ inline std::stringstream &operator<<(std::stringstream &os, const Expr::Kind kin
 // Utility classes
 
 class NonConstantExpr : public Expr {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<Expr>(*this);
+  }
+
+protected:
+  NonConstantExpr() {}
+/*** end serialization ***/
+
 public:
   static bool classof(const Expr *E) {
     return E->getKind() != Expr::Constant;
@@ -366,6 +391,20 @@ public:
 };
 
 class BinaryExpr : public NonConstantExpr {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<NonConstantExpr>(*this);
+    ar & left;
+    ar & right;
+  }
+
+protected:
+  BinaryExpr() {}
+/*** end serialization ***/
+
 public:
   ref<Expr> left, right;
 
@@ -392,6 +431,17 @@ public:
 
 
 class CmpExpr : public BinaryExpr {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+      ar & boost::serialization::base_object<BinaryExpr>(*this);
+  }
+
+protected:
+  CmpExpr() {}
+/*** end serialization ***/
 
 protected:
   CmpExpr(ref<Expr> l, ref<Expr> r) : BinaryExpr(l,r) {}
@@ -409,6 +459,17 @@ public:
 // Special
 
 class NotOptimizedExpr : public NonConstantExpr {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<NonConstantExpr>(*this);
+    ar & src;
+  }
+  NotOptimizedExpr() {}
+/*** end serialization ***/
+
 public:
   static const Kind kind = NotOptimized;
   static const unsigned numKids = 1;
@@ -449,6 +510,17 @@ public:
 
 /// Class representing a byte update of an array.
 class UpdateNode {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & hashValue;
+    ar & size;
+  }
+/*** end serialization ***/
+
+private:
   friend class UpdateList;
 
   // cache instead of recalc
@@ -481,6 +553,15 @@ public:
 };
 
 class Array {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & hashValue;
+  }
+/*** end serialization ***/
+
 public:
   // Name of the array
   const std::string name;
@@ -506,6 +587,8 @@ private:
   // FIXME: Make =delete when we switch to C++11
   Array& operator =(const Array& array);
 
+public:
+  /*** only public for serialization **/
   ~Array();
 
   /// Array - Construct a new array object.
@@ -519,8 +602,8 @@ private:
         const ref<ConstantExpr> *constantValuesBegin = 0,
         const ref<ConstantExpr> *constantValuesEnd = 0,
         Expr::Width _domain = Expr::Int32, Expr::Width _range = Expr::Int8);
+  /*** end: only public for serialization **/
 
-public:
   bool isSymbolicArray() const { return constantValues.empty(); }
   bool isConstantArray() const { return !isSymbolicArray(); }
 
@@ -537,6 +620,18 @@ public:
 
 /// Class representing a complete list of updates into an array.
 class UpdateList { 
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & root;
+    ar & head;
+  }
+  UpdateList() {}
+/*** end serialization ***/
+
+private:
   friend class ReadExpr; // for default constructor
 
 public:
@@ -563,6 +658,18 @@ public:
 
 /// Class representing a one byte read from an array. 
 class ReadExpr : public NonConstantExpr {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<NonConstantExpr>(*this);
+    ar & updates;
+    ar & index;
+  }
+  ReadExpr() {}
+/*** end serialization ***/
+
 public:
   static const Kind kind = Read;
   static const unsigned numKids = 1;
@@ -608,6 +715,19 @@ public:
 
 /// Class representing an if-then-else expression.
 class SelectExpr : public NonConstantExpr {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<NonConstantExpr>(*this);
+    ar & cond;
+    ar & trueExpr;
+    ar & falseExpr;
+  }
+  SelectExpr() {}
+/*** end serialization ***/
+
 public:
   static const Kind kind = Select;
   static const unsigned numKids = 3;
@@ -671,6 +791,19 @@ protected:
     Kid 0 is the left kid, kid 1 is the right kid.
 */
 class ConcatExpr : public NonConstantExpr { 
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<NonConstantExpr>(*this);
+    ar & left;
+    ar & right;
+    ar & width;
+  }
+  ConcatExpr() {}
+/*** end serialization ***/
+
 public: 
   static const Kind kind = Concat;
   static const unsigned numKids = 2;
@@ -737,6 +870,19 @@ protected:
     bit of the expression.
  */
 class ExtractExpr : public NonConstantExpr { 
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<NonConstantExpr>(*this);
+    ar & expr;
+    ar & offset;
+    ar & width;
+  }
+  ExtractExpr() {}
+/*** end serialization ***/
+
 public:
   static const Kind kind = Extract;
   static const unsigned numKids = 1;
@@ -791,6 +937,17 @@ public:
     Bitwise Not 
 */
 class NotExpr : public NonConstantExpr { 
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<NonConstantExpr>(*this);
+    ar & expr;
+  }
+  NotExpr() {}
+/*** end serialization ***/
+
 public:
   static const Kind kind = Not;
   static const unsigned numKids = 1;
@@ -839,6 +996,20 @@ protected:
 // Casting
 
 class CastExpr : public NonConstantExpr {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<NonConstantExpr>(*this);
+    ar & src;
+    ar & width;
+  }
+
+protected:
+  CastExpr() {}
+/*** end serialization ***/
+
 public:
   ref<Expr> src;
   Width width;
@@ -870,6 +1041,15 @@ public:
 
 #define CAST_EXPR_CLASS(_class_kind)                             \
 class _class_kind ## Expr : public CastExpr {                    \
+/*** serialization ***/                                          \
+private:                                                         \
+  friend class boost::serialization::access;                     \
+  template<class Archive>                                        \
+  void serialize(Archive & ar, const unsigned int version) {     \
+    ar & boost::serialization::base_object<CastExpr>(*this);     \
+  }                                                              \
+  _class_kind ## Expr() {}                                       \
+/*** end serialization ***/                                      \
 public:                                                          \
   static const Kind kind = _class_kind;                          \
   static const unsigned numKids = 1;                             \
@@ -901,6 +1081,15 @@ CAST_EXPR_CLASS(ZExt)
 
 #define ARITHMETIC_EXPR_CLASS(_class_kind)                                     \
   class _class_kind##Expr : public BinaryExpr {                                \
+  /*** serialization ***/                                                      \
+  private:                                                                     \
+    friend class boost::serialization::access;                                 \
+    template<class Archive>                                                    \
+    void serialize(Archive & ar, const unsigned int version) {                 \
+      ar & boost::serialization::base_object<BinaryExpr>(*this);               \
+    }                                                                          \
+    _class_kind##Expr() {}                                                     \
+  /*** end serialization ***/                                                  \
   public:                                                                      \
     static const Kind kind = _class_kind;                                      \
     static const unsigned numKids = 2;                                         \
@@ -950,6 +1139,15 @@ ARITHMETIC_EXPR_CLASS(AShr)
 
 #define COMPARISON_EXPR_CLASS(_class_kind)                                     \
   class _class_kind##Expr : public CmpExpr {                                   \
+  /*** serialization ***/                                                      \
+  private:                                                                     \
+    friend class boost::serialization::access;                                 \
+    template<class Archive>                                                    \
+    void serialize(Archive & ar, const unsigned int version) {                 \
+      ar & boost::serialization::base_object<CmpExpr>(*this);                  \
+    }                                                                          \
+    _class_kind##Expr() {}                                                     \
+  /*** end serialization ***/                                                  \
   public:                                                                      \
     static const Kind kind = _class_kind;                                      \
     static const unsigned numKids = 2;                                         \
@@ -994,6 +1192,17 @@ COMPARISON_EXPR_CLASS(Sge)
 // Terminal Exprs
 
 class ConstantExpr : public Expr {
+/*** serialization ***/
+private:
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int version) {
+      ar & boost::serialization::base_object<Expr>(*this);
+      ar & value;
+  }
+  ConstantExpr() {}
+/*** end serialization ***/
+
 public:
   static const Kind kind = Constant;
   static const unsigned numKids = 0;
@@ -1002,7 +1211,6 @@ private:
   llvm::APInt value;
 
   ConstantExpr(const llvm::APInt &v) : value(v) {}
-
 public:
   ~ConstantExpr() {}
 
