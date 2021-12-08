@@ -4,6 +4,7 @@
 #include "klee/Serialization/Expr.h"
 #include "klee/Serialization/Ref.h"
 #include "klee/Serialization/Utils.h"
+#include "klee/Support/ErrorHandling.h"
 #include "klee/Solver/SolverCmdLine.h"
 
 #include <map>
@@ -50,7 +51,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Generate parameters
-  Generator g = Generator(newGeneratorData, concreteValues, "/some/path/testprofil.txt", "./");
+  Generator g = Generator(newGeneratorData, concreteValues);
   g.generate();
 
   return 0;

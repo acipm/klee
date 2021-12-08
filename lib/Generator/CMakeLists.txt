@@ -7,7 +7,6 @@
 #
 #===------------------------------------------------------------------------===#
 klee_add_component(generator
-  AppArmorFileRulesMapping.cpp
   Generator.cpp
 )
 

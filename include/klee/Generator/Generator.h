@@ -2,22 +2,20 @@
 #define KLEE_GENERATOR_H
 
 #include "klee/Expr/Constraints.h"
+#include "klee/Generator/GeneratorDataEntry.h"
 #include "klee/Expr/Expr.h"
-#include "klee/Generator/AppArmorFileRulesMapping.h"
 
+#include <algorithm>
 #include <memory>
 
 namespace klee {
   class Generator {
-    std::vector<std::unique_ptr<AppArmorFileRulesMapping>> fileRuleMappings;
     std::vector<GeneratorDataEntry> data;
     std::map<std::string, std::string> concreteValues;
-    std::string fullPathToApp;
-    std::string apparmorConfigPath;
-    std::string apparmorPathToFilename(std::string path);
     
   public:
-    Generator(std::vector<GeneratorDataEntry> data, std::map<std::string, std::string> concreteValues, std::string fullPathToApp, std::string apparmorConfigPath = "/etc/apparmor.d/");
+    Generator(std::vector<GeneratorDataEntry> data, std::map<std::string, std::string> concreteValues) : data(data), concreteValues(concreteValues) {}
+
     void generate();
   };
 }
