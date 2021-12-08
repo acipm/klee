@@ -4397,7 +4397,7 @@ void Executor::runFunctionAsMain(Function *f,
 
   processTree = std::make_unique<PTree>(state);
   run(*state);
-  serialize(generatorData, "footest");
+  serialize(generatorData, "expressions");
   processTree = nullptr;
 
   // hack to clear memory objects
