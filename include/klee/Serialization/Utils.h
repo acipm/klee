@@ -12,8 +12,8 @@
 
 namespace klee {
 
-void serialize(std::vector<GeneratorDataEntry> generatorData) {
-  std::ofstream ofs("footest");
+void serialize(std::vector<GeneratorDataEntry> generatorData, std::string outfile) {
+  std::ofstream ofs(outfile);
   boost::archive::text_oarchive oa(ofs);
   // write class instance to archive
   oa.register_type(static_cast<ConstantExpr *>(nullptr));
@@ -53,12 +53,14 @@ void serialize(std::vector<GeneratorDataEntry> generatorData) {
   oa.register_type(static_cast<SgeExpr *>(nullptr));
 
   oa << generatorData;
-  // archive and stream closed when destructors are called
 }
 
-void deserialize(std::vector<GeneratorDataEntry> *generatorData) {
+bool deserialize(std::vector<GeneratorDataEntry> *generatorData, std::string infile) {
   // create and open an archive for input
-  std::ifstream ifs("footest");
+  std::ifstream ifs(infile);
+  if (!ifs.good()) {
+    return false;
+  }
   boost::archive::text_iarchive ia(ifs);
   // read class state from archive
   ia.register_type(static_cast<ConstantExpr *>(nullptr));
@@ -98,7 +100,7 @@ void deserialize(std::vector<GeneratorDataEntry> *generatorData) {
   ia.register_type(static_cast<SgeExpr *>(nullptr));
 
   ia >> *generatorData;
-  // archive and stream closed when destructors are called
+  return true;
 }
 }
 

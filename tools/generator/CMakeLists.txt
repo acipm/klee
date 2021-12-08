@@ -6,12 +6,19 @@
 # License. See LICENSE.TXT for details.
 #
 #===------------------------------------------------------------------------===#
-add_subdirectory(gen-bout)
-add_subdirectory(gen-random-bout)
-add_subdirectory(kleaver)
-add_subdirectory(klee)
-add_subdirectory(klee-replay)
-add_subdirectory(klee-stats)
-add_subdirectory(klee-zesti)
-add_subdirectory(ktest-tool)
-add_subdirectory(generator)
+add_executable(klee-generator
+  main.cpp
+)
+
+set(KLEE_LIBS
+  kleeCore
+  kleaverExpr
+  generator
+)
+
+target_link_libraries(klee-generator ${KLEE_LIBS})
+
+install(TARGETS klee-generator RUNTIME DESTINATION bin)
+
+# The KLEE binary depends on the runtimes
+#add_dependencies(klee BuildKLEERuntimes)

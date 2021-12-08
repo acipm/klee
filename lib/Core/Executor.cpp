@@ -7,10 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// REMOVE THIS
-#include "llvm/ADT/APInt.h"
-//END REMOVE THIS
-
 #include "klee/Serialization/llvm.h"
 #include "klee/Serialization/Expr.h"
 #include "klee/Serialization/Ref.h"
@@ -4401,7 +4397,7 @@ void Executor::runFunctionAsMain(Function *f,
 
   processTree = std::make_unique<PTree>(state);
   run(*state);
-  serializeGeneratorData();
+  serialize(generatorData, "footest");
   processTree = nullptr;
 
   // hack to clear memory objects
@@ -4707,16 +4703,6 @@ void Executor::dumpStates() {
   }
 
   ::dumpStates = 0;
-}
-
-void Executor::serializeGeneratorData() {
-  serialize(generatorData);
-  std::vector<GeneratorDataEntry> newGeneratorData;
-  deserialize(&newGeneratorData);
-
-  std::map<std::string, std::string> concreteValues = {{"arg00", "ab"}, {"model_version", "\1"}};
-  Generator g = Generator(newGeneratorData, concreteValues, "/some/path/testprofil.txt", "./");
-  g.generate();
 }
 
 ///
