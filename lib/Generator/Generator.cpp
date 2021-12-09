@@ -104,7 +104,8 @@ namespace klee {
       	  // TODO error: invalid number of parameters
           continue;
       	}
-        std::cout << "[THESIS fopen] \0" << parameters[0] << "\0\0" << parameters[1] << "\0\n";
+#define chr(x) static_cast<char>(x)
+        std::cout << "[THESIS fopen]" << chr(0) << parameters[0] << chr(0) << chr(0) << parameters[1] << chr(0) << "\n";
       }
     }
   }
