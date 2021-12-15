@@ -118,10 +118,10 @@ namespace klee {
         std::string filepath = calculateConcreteString(entry.parameters[0], concreteValues);
         int flags = calculateConcreteInt(entry.parameters[1], concreteValues);
       	if (entry.parameters.size() == 2) {
-          std::cout << "[THESIS open]" << chr(0) << filepath << chr(0) << chr(0) << flags << chr(0) << "\n";
+          std::cout << "[THESIS open2]" << chr(0) << filepath << chr(0) << chr(0) << flags << chr(0) << "\n";
       	} else if (entry.parameters.size() == 3) {
           int mode = calculateConcreteInt(entry.parameters[2], concreteValues);
-          std::cout << "[THESIS open]" << chr(0) << filepath << chr(0) << chr(0) << flags << chr(0) << chr(0) << mode << chr(0) << "\n";
+          std::cout << "[THESIS open3]" << chr(0) << filepath << chr(0) << chr(0) << flags << chr(0) << chr(0) << mode << chr(0) << "\n";
         }
       }
     }
