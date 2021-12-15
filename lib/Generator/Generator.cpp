@@ -36,76 +36,93 @@ namespace klee {
     return true;
   }
 
-  std::vector<std::string> calculateConcreteParameters(std::vector<ParameterExpressions> parameterExpressions, std::map<std::string, std::string> concreteValues) {
+  std::vector<ref<ConstantExpr>> insertConcreteValues(std::vector<ref<Expr>> parameterExpressions, std::map<std::string, std::string> concreteValues) {
+    std::vector<ref<ConstantExpr>> constants;
     // inserts concrete values into symbolic characters and calculate resulting parameters
-    std::vector<std::string> parameters(parameterExpressions.size(), "");
-    // for every fopen parameter
     for (unsigned i = 0; i < parameterExpressions.size(); i++) {
-      // for every character in that fopen parameter
-      for (unsigned j = 0; j < parameterExpressions[i].size(); j++) {
-        if (ConstantExpr *ce = dyn_cast<ConstantExpr>(parameterExpressions[i][j])) {
-          // if character is constant, add character to final string
+      if (ref<ConstantExpr> ce = dyn_cast<ConstantExpr>(parameterExpressions[i])) {
+        constants.push_back(ce);
+      } else {
+        // else: character is symbolic
 
-          char letter = static_cast<char>(ce->getZExtValue());
-          if (!isprint(letter)) {
-            break;
+        // symbolicArrays describe all inputs that in any way contribute to the symbolic character
+        std::vector<const Array *> symbolicArrays;
+        std::vector<std::vector<unsigned char>> values;
+
+        // find all symbolic arrays which describe the character e.g. arg00
+        findSymbolicObjects(parameterExpressions[i], symbolicArrays);
+
+        // for every symbolic array which describe the character e.g. arg00
+        for (unsigned arrayIndex = 0; arrayIndex < symbolicArrays.size(); arrayIndex++) {
+          // find the name of that symbolic array in the concrete values
+          // e.g. for symbolic array with name "arg00" there must be entry such as {"arg00", "ab"} in concreteValues
+          auto it = concreteValues.find(symbolicArrays[arrayIndex]->name);
+          if (it == concreteValues.end()) {
+            // TODO error: missing key array->name
+            // this means, the concreteValues need an entry with the name in symbolicArrays[arrayIndex]->name
           }
-          parameters[i] += letter;
-
-        } else {
-          // else: character is symbolic
-
-          // symbolicArrays describe all inputs that in any way contribute to the symbolic character
-          std::vector<const Array *> symbolicArrays;
-          std::vector<std::vector<unsigned char>> values;
-
-          // find all symbolic arrays which describe the character e.g. arg00
-          findSymbolicObjects(parameterExpressions[i][j], symbolicArrays);
-
-          // for every symbolic array which describe the character e.g. arg00
-          for (unsigned arrayIndex = 0; arrayIndex < symbolicArrays.size(); arrayIndex++) {
-            // find the name of that symbolic array in the concrete values
-            // e.g. for symbolic array with name "arg00" there must be entry such as {"arg00", "ab"} in concreteValues
-            auto it = concreteValues.find(symbolicArrays[arrayIndex]->name);
-            if (it == concreteValues.end()) {
-              // TODO error: missing key array->name
-              // this means, the concreteValues need an entry with the name in symbolicArrays[arrayIndex]->name
-            }
-            // add concreteValue entry to list that will be evaluated
-            std::vector<unsigned char> concreteValue(it->second.begin(), it->second.end());
-            values.push_back(concreteValue);
-          }
-
-          // insert concrete values into symbolic arrays and calculate resulting character
-          Assignment a(symbolicArrays, values);
-          ref<Expr> result = a.evaluate(parameterExpressions[i][j]);
-
-          // add resulting character to final parameter
-          ConstantExpr *ce2 = dyn_cast<ConstantExpr>(result);
-          char letter = static_cast<char>(ce2->getZExtValue());
-          if (!isprint(letter)) {
-            break;
-          }
-          parameters[i] += letter;
+          // add concreteValue entry to list that will be evaluated
+          std::vector<unsigned char> concreteValue(it->second.begin(), it->second.end());
+          values.push_back(concreteValue);
         }
+
+        // insert concrete values into symbolic arrays and calculate resulting character
+        Assignment a(symbolicArrays, values);
+        ref<Expr> result = a.evaluate(parameterExpressions[i]);
+
+        // add resulting character to final parameter
+        ref<ConstantExpr> ce2 = dyn_cast<ConstantExpr>(result);
+        constants.push_back(ce2);
       }
     }
-    return parameters;
+    return constants;
   }
 
+  std::string calculateConcreteString(std::vector<ref<Expr>> parameter, std::map<std::string, std::string> concreteValues) {
+    std::string concreteString("");
+    std::vector<ref<ConstantExpr>> constants = insertConcreteValues(parameter, concreteValues);
+    for (unsigned i = 0; i < constants.size(); i++) {
+      char letter = static_cast<char>(constants[i]->getZExtValue());
+      if (!isprint(letter)) {
+        break;
+      }
+      concreteString += letter;
+    }
+    return concreteString;
+  }
+
+  uint64_t calculateConcreteInt(std::vector<ref<Expr>> parameter, std::map<std::string, std::string> concreteValues) {
+    std::vector<ref<ConstantExpr>> constants = insertConcreteValues(parameter, concreteValues);
+    return constants[0]->getZExtValue(); 
+  }
+
+#define chr(x) static_cast<char>(x)
   void Generator::generate() {
     for (auto entry : data) {
       if (!matchesConstraints(entry.constraints, concreteValues)) {
         continue;
       }
-      std::vector<std::string> parameters = calculateConcreteParameters(entry.parameters, concreteValues);
       if (entry.identifier == "fopen") {
-      	if (parameters.size() != 2) {
+      	if (entry.parameters.size() != 2) {
       	  // TODO error: invalid number of parameters
           continue;
       	}
-#define chr(x) static_cast<char>(x)
-        std::cout << "[THESIS fopen]" << chr(0) << parameters[0] << chr(0) << chr(0) << parameters[1] << chr(0) << "\n";
+        std::string filepath = calculateConcreteString(entry.parameters[0], concreteValues);
+        std::string mode = calculateConcreteString(entry.parameters[1], concreteValues);
+        std::cout << "[THESIS fopen]" << chr(0) << filepath << chr(0) << chr(0) << mode << chr(0) << "\n";
+      } else if (entry.identifier == "open") {
+      	if (entry.parameters.size() != 2 && entry.parameters.size() != 3) {
+      	  // TODO error: invalid number of parameters
+          continue;
+      	}
+        std::string filepath = calculateConcreteString(entry.parameters[0], concreteValues);
+        int flags = calculateConcreteInt(entry.parameters[1], concreteValues);
+      	if (entry.parameters.size() == 2) {
+          std::cout << "[THESIS open]" << chr(0) << filepath << chr(0) << chr(0) << flags << chr(0) << "\n";
+      	} else if (entry.parameters.size() == 3) {
+          int mode = calculateConcreteInt(entry.parameters[2], concreteValues);
+          std::cout << "[THESIS open]" << chr(0) << filepath << chr(0) << chr(0) << flags << chr(0) << chr(0) << mode << chr(0) << "\n";
+        }
       }
     }
   }

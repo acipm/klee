@@ -2367,34 +2367,33 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     for (unsigned j=0; j<numArgs; ++j)
       arguments.push_back(eval(ki, j+1, state).value);
 
-    if (f->getGlobalIdentifier() == "fopen") {
-      GeneratorDataEntry entry;
-      entry.identifier = "fopen";
-      entry.constraints = state.constraints;
-      for (unsigned k=0; k<numArgs; k++) {
-        ResolutionList rl;
-        state.addressSpace.resolve(state, solver, arguments[k], rl);
+    std::vector<std::string> options = {"fopen", "open"};
+    for (std::string option : options) {
+      if (f->getGlobalIdentifier() == option) {
+        GeneratorDataEntry entry;
+        entry.identifier = option;
+        entry.constraints = state.constraints;
+        for (unsigned k=0; k<numArgs; k++) {
+          ResolutionList rl;
+          state.addressSpace.resolve(state, solver, arguments[k], rl);
 
-        if (rl.size() != 1) {
-          std::string tmpStr;
-          llvm::raw_string_ostream os(tmpStr);
-          os << "\n";
-          os << "Error: Parameter of fopen points to " << rl.size() << " instead of one element!\n";
-          klee_message("%s", os.str().c_str());
-        } else {
-          std::vector<ref<Expr>> argBytes;
-          const ObjectState* objectState = rl[0].second;
-          for (unsigned j = 0; j < objectState->size; j++) {
-            ref<Expr> expr = objectState->read8(j);
-            if (expr->isZero()) {
-              break;
+          if (rl.size() != 1) {
+            entry.parameters.push_back(std::vector<ref<Expr>>{arguments[k]});
+          } else {
+            std::vector<ref<Expr>> argBytes;
+            const ObjectState* objectState = rl[0].second;
+            for (unsigned j = 0; j < objectState->size; j++) {
+              ref<Expr> expr = objectState->read8(j);
+              if (expr->isZero()) {
+                break;
+              }
+              argBytes.push_back(expr);
             }
-            argBytes.push_back(expr);
+            entry.parameters.push_back(argBytes);
           }
-          entry.parameters.push_back(argBytes);
         }
+        generatorData.push_back(entry);  
       }
-      generatorData.push_back(entry);  
     }
 
     if (f) {
