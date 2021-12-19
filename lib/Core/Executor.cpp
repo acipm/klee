@@ -1654,6 +1654,38 @@ ref<klee::ConstantExpr> Executor::getEhTypeidFor(ref<Expr> type_info) {
   return res;
 }
 
+
+void Executor::saveGeneratorData(ExecutionState &state, KInstruction *ki, Function *f, unsigned numArgs, std::vector<ref<Expr>> arguments) {
+  std::vector<std::string> options = {"fopen", "open"};
+  for (std::string option : options) {
+    if (f->getGlobalIdentifier() == option) {
+      GeneratorDataEntry entry;
+      entry.identifier = option;
+      entry.constraints = state.constraints;
+      for (unsigned k=0; k<numArgs; k++) {
+        ResolutionList rl;
+        state.addressSpace.resolve(state, solver, arguments[k], rl);
+
+        if (rl.size() != 1) {
+          entry.parameters.push_back(std::vector<ref<Expr>>{arguments[k]});
+        } else {
+          std::vector<ref<Expr>> argBytes;
+          const ObjectState* objectState = rl[0].second;
+          for (unsigned j = 0; j < objectState->size; j++) {
+            ref<Expr> expr = objectState->read8(j);
+            if (expr->isZero()) {
+              break;
+            }
+            argBytes.push_back(expr);
+          }
+          entry.parameters.push_back(argBytes);
+        }
+      }
+      generatorData.push_back(entry);
+    }
+  }
+}
+
 void Executor::executeCall(ExecutionState &state, KInstruction *ki, Function *f,
                            std::vector<ref<Expr>> &arguments) {
   Instruction *i = ki->inst;
@@ -2367,36 +2399,8 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     for (unsigned j=0; j<numArgs; ++j)
       arguments.push_back(eval(ki, j+1, state).value);
 
-    std::vector<std::string> options = {"fopen", "open"};
-    for (std::string option : options) {
-      if (f->getGlobalIdentifier() == option) {
-        GeneratorDataEntry entry;
-        entry.identifier = option;
-        entry.constraints = state.constraints;
-        for (unsigned k=0; k<numArgs; k++) {
-          ResolutionList rl;
-          state.addressSpace.resolve(state, solver, arguments[k], rl);
-
-          if (rl.size() != 1) {
-            entry.parameters.push_back(std::vector<ref<Expr>>{arguments[k]});
-          } else {
-            std::vector<ref<Expr>> argBytes;
-            const ObjectState* objectState = rl[0].second;
-            for (unsigned j = 0; j < objectState->size; j++) {
-              ref<Expr> expr = objectState->read8(j);
-              if (expr->isZero()) {
-                break;
-              }
-              argBytes.push_back(expr);
-            }
-            entry.parameters.push_back(argBytes);
-          }
-        }
-        generatorData.push_back(entry);  
-      }
-    }
-
     if (f) {
+      saveGeneratorData(state, ki, f, numArgs, arguments);
       const FunctionType *fType = 
         dyn_cast<FunctionType>(cast<PointerType>(f->getType())->getElementType());
       const FunctionType *fpType =
@@ -2466,6 +2470,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
                                 "resolved symbolic function pointer to: %s",
                                 f->getName().data());
 
+            saveGeneratorData(state, ki, f, numArgs, arguments);
             executeCall(*res.first, ki, f, arguments);
           } else {
             if (!hasInvalid) {

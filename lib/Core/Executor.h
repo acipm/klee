@@ -555,6 +555,8 @@ public:
 
   MergingSearcher *getMergingSearcher() const { return mergingSearcher; };
   void setMergingSearcher(MergingSearcher *ms) { mergingSearcher = ms; };
+
+  void saveGeneratorData(ExecutionState &state, KInstruction *ki, llvm::Function *f, unsigned numArgs, std::vector<ref<Expr>> arguments);
 };
   
 } // End klee namespace
